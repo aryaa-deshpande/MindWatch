@@ -1,77 +1,77 @@
-# persona_expansion.py (Ollama version using Zephyr)
+# mindwatch/data_generation/persona_expansion.py
 
+import os
 import json
 import random
 import time
 import requests
 from tqdm import tqdm
-from pathlib import Path
-
-# Load your base personas
 from base_personas import PERSONAS
 
-# Prompt template for Zephyr
-CONTEXT_PROMPT = """
-You are helping build synthetic journaling personas for a mental health journaling app.
-Each persona has a basic psychological context: {base_context}
+OLLAMA_API_URL = "http://localhost:11434/api/generate"
+MODEL_NAME = "zephyr"
+OUTPUT_PATH = "data/generated/expanded_personas.json"
 
-Your task is to generate {num_variants} emotional variations of this persona's journal entry scenario.
-Each variation should:
-- Feel like a real, specific moment in time
-- Convey different emotional tones (e.g., anxious, hopeful, numb, spiraling, reflective)
-- Be short (1–3 sentences max), as if copied from a real journal
-- Avoid repetition and feel like different phases or experiences
+# Each original persona will be expanded into 5 variants (total ~150)
+MULTIPLIER = 5
 
-Return ONLY the list of journal entry variations.
-"""
 
-# Run Zephyr via Ollama REST API
-def query_zephyr(prompt, model="zephyr"):
-    res = requests.post(
-        "http://localhost:11434/api/generate",
-        json={"model": model, "prompt": prompt, "stream": False}
+def expand_persona(persona, variation_id):
+    prompt = (
+    f"You are generating emotionally realistic *first-person personas* for a mental health journaling AI system.\n\n"
+    f"Here is the original base persona:\n"
+    f"- Name: {persona['name']}\n"
+    f"- Age: {persona['age']}\n"
+    f"- Emotional context: {persona['context']}\n"
+    f"- Social engagement baseline (1–5): {persona['baseline_social']}\n"
+    f"- Average screen time (hours/day): {persona['baseline_screen_time']}\n\n"
+    f"Now create a **new persona** who is similar but distinct:\n"
+    f"- Use a **different name** and a **slightly different emotional experience**\n"
+    f"- Keep the age between **18 and 25**\n"
+    f"- Adjust **social score** and **screen time** within realistic limits\n"
+    f"- Write the **context as a short first-person paragraph**, as if the new persona is journaling about their mental health.\n"
+    f"  Make it 2–3 sentences max, emotionally expressive, not a third-person biography.\n\n"
+    f"Return ONLY a valid JSON object in this structure — no commentary, markdown, or formatting:\n"
+    f'{{"name": "...", "age": ..., "context": "<first-person emotional paragraph>", '
+    f'"baseline_social": ..., "baseline_screen_time": ...}}'
+)
+
+
+    response = requests.post(
+        OLLAMA_API_URL,
+        json={"model": MODEL_NAME, "prompt": prompt, "stream": False}
     )
-    return res.json().get("response", "")
 
-# Main expansion script
-def expand_personas(personas, variants_per=5, out_path="expanded_personas.json"):
-    expanded = []
-
-    for persona in tqdm(personas):
-        base_context = persona["context"]
-
-        # Generate prompt
-        prompt = CONTEXT_PROMPT.format(
-            base_context=base_context,
-            num_variants=variants_per
-        )
-
-        # Call Ollama (Zephyr)
+    if response.status_code == 200:
+        content = response.json().get("response", "").strip()
         try:
-            response = query_zephyr(prompt)
-            variants = [line.strip("-\n ") for line in response.split("\n") if line.strip()]
-        except Exception as e:
-            print(f"Failed on persona {persona['persona_id']}: {e}")
-            variants = []
+            variation = json.loads(content)
+            variation["persona_id"] = f"{persona['persona_id']}_v{variation_id}"
+            return variation
+        except json.JSONDecodeError:
+            print(f"[Warning] Failed to parse response:\n{content}")
+            return None
+    else:
+        print(f"[Error] Ollama request failed: {response.text}")
+        return None
+        
 
-        expanded.append({
-            "persona_id": persona["persona_id"],
-            "name": persona["name"],
-            "age": persona["age"],
-            "base_context": base_context,
-            "journal_variants": variants
-        })
 
-        # Be nice to your local machine
-        time.sleep(1.5)
+# Expand personas
+expanded = []
 
-    # Save output
-    Path("data/generated").mkdir(parents=True, exist_ok=True)
-    with open(f"data/generated/{out_path}", "w") as f:
-        json.dump(expanded, f, indent=2)
+for persona in tqdm(PERSONAS, desc="Expanding personas"):
+    expanded.append(persona)  # include the original
+    for i in range(1, MULTIPLIER):
+        variant = expand_persona(persona, i)
+        if variant:
+            expanded.append(variant)
+        time.sleep(0.2)  # throttle requests to be safe
 
-    print(f"Saved {len(expanded)} expanded personas to data/generated/{out_path}")
+# Save output
+os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
 
-# Run it!
-if __name__ == "__main__":
-    expand_personas(PERSONAS)
+with open(OUTPUT_PATH, "w") as f:
+    json.dump(expanded, f, indent=2)
+
+print(f"✅ Saved {len(expanded)} expanded personas to {OUTPUT_PATH}")
