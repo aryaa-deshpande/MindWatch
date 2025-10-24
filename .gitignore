@@ -1,2 +1,41 @@
-# Virtual environments
+# 🐍 Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# 🧪 Virtual environments
 venv/
+env/
+
+# 📓 Jupyter
+.ipynb_checkpoints/
+
+# 📊 Data & Outputs
+data/*.csv
+*.json
+*.tsv
+*.xlsx
+*.parquet
+*.pickle
+*.pkl
+
+# 🔐 Secrets / Keys / Tokens
+*.env
+.env.*
+
+# 📦 Build & dist
+build/
+dist/
+*.egg-info/
+
+# 📁 OS and Editor junk
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# 🔄 Logs
+*.log
+
+# 🚀 Streamlit
+.streamlit/
