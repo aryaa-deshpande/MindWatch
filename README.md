@@ -14,6 +14,38 @@ MindWatch is an AI-powered system designed to detect early signs of mental healt
 ```
 
 
+## 🔍 What This Project Does
+
+1. **Persona Expansion**  
+   - Start with 30 base personas (e.g., students with different mental health contexts)
+   - Use an LLM (Zephyr via Ollama) to generate 4–5 emotionally similar but distinct variations per persona
+   - Total: ~150 emotionally varied synthetic personas
+
+2. **Journal Generation (Current Phase)**  
+   - For each persona, simulate 7 days of mental health journaling
+   - Inject realistic emotion shifts (hopeful, reflective, anxious, etc.)
+   - Output: ~1,050 journal entries grounded in emotional trajectory
+
+3. **Next Steps (Upcoming)**
+   - Score each journal entry for:
+     - Emotion intensity
+     - Drift from baseline
+     - Risk levels (burnout, depressive markers, etc.)
+   - Generate visualizations, embeddings, and behavior tags
+
+---
+
+## 🛠️ Tech Stack
+
+- **LLM Inference**: [Ollama](https://ollama.com) running `zephyr` locally with GPU acceleration
+- **Language**: Python 3.9
+- **Data Management**: JSON output (for personas and journals)
+- **Multithreading**: Used to parallelize journal generation safely
+- **Notebook + CLI Pipelines**: Modular scripts for each step in `data_generation/` and `analysis/`
+
+---
+
+
 ## 🔧 Setup
 ```
 git clone https://github.com/aryaa-deshpande/mindwatch.git
